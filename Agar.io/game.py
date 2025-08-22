@@ -1,7 +1,17 @@
 import random
+import time
 
 import pygame
 import math
+import ast
+import socket
+
+IP_serwer = '26.123.126.212'
+
+kliet_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+kliet_socket.connect((IP_serwer, 55555))
+kliet_socket.setblocking(True)
+my_name = 'illa'
 
 pygame.init()
 
@@ -37,41 +47,64 @@ class Enemy_Player():
 
 
 
-enemy_Players = []
+eats = []
 for i in range(50):
-    enemy_Players.append(Enemy_Player(random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
+    eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
 
 my_Player = My_Player(0, 0, 20)
+eats.append((my_Player.x, my_Player.y, my_Player.radius))
 
+kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
+time.sleep(0.5)
 
 clock = pygame.time.Clock()
 ran = True
 while ran:
+    kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             ran = False
 
     screen.fill((50,50,50))
-    for x in range(-10, 10):
-        for y in range(-10, 10):
-            xx= x*100-my_Player.x+screen_x//2
-            yy= y*100-my_Player.y+screen_y//2
-            pygame.draw.line(screen, (100,100,100), (xx, yy), (xx, yy+100), 2)
-            pygame.draw.line(screen, (100,100,100), (xx, yy), (xx+100, yy), 2)
+    for x in range(-1000, 1000, 100):
+        pygame.draw.line(screen, (100,100,100), (x-my_Player.x+screen_x//2, 1000-my_Player.y+screen_y//2), (x-my_Player.x+screen_x//2, -1000-my_Player.y+screen_y//2), 2)
+
+    for y in range(-1000, 1000, 100):
+        pygame.draw.line(screen, (100,100,100), (1000-my_Player.x+screen_x//2, y-my_Player.y+screen_y//2), (-1000-my_Player.x+screen_x//2, y-my_Player.y+screen_y//2), 2)
 
     pygame.draw.rect(screen, (200,200,200), pygame.Rect(-1000-my_Player.x+screen_x//2, -1000-my_Player.y+screen_y//2, 2000, 2000), 5)
 
     my_Player.draw()
     screen.blit(pygame.font.Font(None, 50).render(f'{int(my_Player.x)} : {int(my_Player.y)}', 1, (200,200,200)), (0, 0))
 
-    for enemy_Player in enemy_Players:
-        enemy_Player.draw(my_Player.x, my_Player.y)
-        if my_Player.collide(enemy_Player.x, enemy_Player.y):
-            my_Player.radius = ((3.14*(my_Player.radius**2) + 3.14*(enemy_Player.radius**2))/3.14)**0.5
+    try:
+        msg = kliet_socket.recv(2048).decode()
+        print(msg)
+        msg=msg.split('&')[-2]
+        print(msg)
+        players = ast.literal_eval(msg)
+        print(1)
+        print('raddr=' + str(kliet_socket.getsockname()))
+        if not ('raddr=' + str(kliet_socket.getsockname())) in players.keys(): ran = False
+        else:
+            my = players[('raddr=' + str(kliet_socket.getsockname()))]
+            my_Player = My_Player(my[0], my[1], my[2])
+            del players[('raddr=' + str(kliet_socket.getsockname()))]
+        print(2)
+        for player in players.values():
+            Enemy_Player(player[0], player[1], player[2]).draw(my_Player.x, my_Player.y)
+    except: print('e')
+
+    for eat0 in eats:
+        eat = Enemy_Player(eat0[0], eat0[1], eat0[2])
+        eat.draw(my_Player.x, my_Player.y)
+        if my_Player.collide(eat.x, eat.y):
+            my_Player.radius = ((3.14 * (my_Player.radius**2) + 3.14 * (eat.radius ** 2)) / 3.14) ** 0.5
             print(my_Player.radius)
-            enemy_Players.remove(enemy_Player)
-            enemy_Players.append(Enemy_Player(random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
+            eats.remove(eat0)
+            eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
 
 
 
@@ -87,4 +120,5 @@ while ran:
 
 
     pygame.display.flip()
+
     clock.tick(120)
