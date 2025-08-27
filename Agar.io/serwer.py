@@ -21,12 +21,15 @@ class My_Player():
 
 players = dict()
 while True:
-    time.sleep(0.01)
+    time.sleep(0.005)
     try:
         connection, address = server_socket.accept()
         print (f'Підключився клієнт {connection}')
-        connection.setblocking(False)
+        connection.setblocking(True)
         clients.append(connection)
+        a = str(connection).split('), ')[1][0:-1]
+        players[a] = ast.literal_eval(connection.recv(1024).decode())
+        connection.setblocking(False)
     except : pass
 
 
@@ -54,4 +57,10 @@ while True:
     for client in clients:
         try:
             client.send((str(players)+'&').encode())
-        except: pass
+        except:
+            try:
+                clients.remove(client)
+                a = str(client).split('), ')[1][0:-1]
+                del players[a]
+            except: pass
+

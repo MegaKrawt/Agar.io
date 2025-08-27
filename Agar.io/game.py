@@ -15,10 +15,10 @@ my_name = 'illa'
 
 pygame.init()
 
-screen_y = 1000
-screen_x = 1000
-screen = pygame.display.set_mode((screen_x, screen_y))
-
+screen_y = 500
+screen_x = 500
+screen = pygame.Surface((screen_x, screen_y))
+screen2 = pygame.display.set_mode((900, 900))
 class My_Player():
     def __init__(self, x, y, radius, color=(0, 255, 0)):
         self.color = color
@@ -34,16 +34,19 @@ class My_Player():
     def draw(self):
         pygame.draw.circle(screen, self.color, (0+screen_x//2, 0+screen_y//2), self.radius)
 
-
+font1=pygame.font.Font(None, 40)
 class Enemy_Player():
-    def __init__(self, x, y, radius, color=(255,0,0)):
+    def __init__(self, x, y, radius, name='', color=(255,0,0)):
+        self.name = name
         self.color = color
         self.radius = radius
         self.y = y
         self.x = x
+        self.text = font1.render(str(self.name), 1, (0,0,0))
 
     def draw(self, x_pad, y_pad):
         pygame.draw.circle(screen, self.color, (self.x-x_pad+screen_x//2, self.y-y_pad+screen_y//2), self.radius)
+        screen.blit(self.text, (self.x-x_pad+screen_x//2, self.y-y_pad+screen_y//2))
 
 
 
@@ -55,11 +58,15 @@ my_Player = My_Player(0, 0, 20)
 eats.append((my_Player.x, my_Player.y, my_Player.radius))
 
 kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
-time.sleep(0.5)
+kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
+kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
+time.sleep(1)
 
 clock = pygame.time.Clock()
 ran = True
 while ran:
+    screen = pygame.Surface((my_Player.radius*10+300, my_Player.radius*10+300))
+    screen_x, screen_y = screen.get_size()
     kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
 
 
@@ -81,20 +88,23 @@ while ran:
 
     try:
         msg = kliet_socket.recv(2048).decode()
-        print(msg)
+        # print(msg)
         msg=msg.split('&')[-2]
-        print(msg)
+        # print(msg)
         players = ast.literal_eval(msg)
-        print(1)
-        print('raddr=' + str(kliet_socket.getsockname()))
+        # print(players)
+        # print(1)
+        # print('raddr=' + str(kliet_socket.getsockname()))
         if not ('raddr=' + str(kliet_socket.getsockname())) in players.keys(): ran = False
         else:
             my = players[('raddr=' + str(kliet_socket.getsockname()))]
-            my_Player = My_Player(my[0], my[1], my[2])
+            if my[2] >= my_Player.radius:
+                my_Player = My_Player(my[0], my[1], my[2])
             del players[('raddr=' + str(kliet_socket.getsockname()))]
-        print(2)
+        # print(2)
         for player in players.values():
-            Enemy_Player(player[0], player[1], player[2]).draw(my_Player.x, my_Player.y)
+            # print(player)
+            Enemy_Player(player[0], player[1], player[2], player[3]).draw(my_Player.x, my_Player.y)
     except: print('e')
 
     for eat0 in eats:
@@ -110,15 +120,21 @@ while ran:
 
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    my_Player.x += min(200, max(-200, mouse_x - screen_x//2))/200
-    my_Player.y += min(200, max(-200, mouse_y - screen_y//2))/200
-
+    try:
+        my_Player.x += min(200, max(-200, mouse_x - screen2.get_width()//2))/200*120/clock.get_fps()/(min(5, my_Player.radius*0.02))
+        my_Player.y += min(200, max(-200, mouse_y - screen2.get_height()//2))/200*120/clock.get_fps()/(min(5, my_Player.radius*0.02))
+    except: pass
     if my_Player.x+my_Player.radius > 1000: my_Player.x = 999-my_Player.radius
     if my_Player.x-my_Player.radius < -1000: my_Player.x = -999+my_Player.radius
     if my_Player.y+my_Player.radius > 1000: my_Player.y = 999-my_Player.radius
     if my_Player.y-my_Player.radius < -1000: my_Player.y = -999+my_Player.radius
 
+    screen.blit(pygame.font.Font(None, 50).render(f'FPS: {clock.get_fps()}', 1, (200,200,200)), (0, 100))
 
+    scaled_virtual_screen = pygame.transform.scale(screen, (900, 900))
+    screen2.blit(scaled_virtual_screen, (0,0))
     pygame.display.flip()
 
     clock.tick(120)
+
+kliet_socket.close()
