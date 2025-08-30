@@ -62,10 +62,10 @@ class Enemy_Player():
 
 eats = []
 for i in range(50):
-    eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
+    eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), random.randint(5, 14), (255, random.randint(0, 255), 0)))
 
 my_Player = My_Player(0, 0, 20)
-eats.append((my_Player.x, my_Player.y, my_Player.radius))
+# eats.append((my_Player.x, my_Player.y, my_Player.radius))
 
 kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
 kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
@@ -118,16 +118,14 @@ while ran:
     except: print('e')
 
     for eat0 in eats:
-        eat = Enemy_Player(eat0[0], eat0[1], eat0[2])
-        eat.draw(my_Player.x, my_Player.y)
-        if my_Player.collide(eat.x, eat.y):
-            my_Player.radius = ((3.14 * (my_Player.radius**2) + 3.14 * (eat.radius ** 2)) / 3.14) ** 0.5
+        # eat = Enemy_Player(eat0[0], eat0[1], eat0[2])
+        pygame.draw.circle(screen, eat0[3], (eat0[0] - my_Player.x + screen_x // 2, eat0[1] - my_Player.y + screen_y // 2), eat0[2])
+        if my_Player.collide(eat0[0], eat0[1]):
+            my_Player.radius = ((3.14 * (my_Player.radius**2) + 3.14 * (eat0[2] ** 2)) / 3.14) ** 0.5
             print(my_Player.radius)
             eats.remove(eat0)
-            eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), 10))
-
-
-
+            eats.append((random.randint(-1000, 1000), random.randint(-1000, 1000), random.randint(5, 14),
+                         (255, random.randint(0, 255), 0)))
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
     try:
