@@ -1,6 +1,9 @@
+import login
+my_name = login.username_end
+my_img_name = login.my_img_n_end
+
 import random
 import time
-
 import pygame
 import math
 import ast
@@ -11,12 +14,12 @@ IP_serwer = '26.123.126.212'
 kliet_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 kliet_socket.connect((IP_serwer, 55555))
 kliet_socket.setblocking(True)
-my_name = 'illa'
+
 
 pygame.init()
 
-screen_y = 500
-screen_x = 500
+screen_y = 100
+screen_x = 100
 screen = pygame.Surface((screen_x, screen_y))
 screen2 = pygame.display.set_mode((900, 900))
 class My_Player():
@@ -25,6 +28,8 @@ class My_Player():
         self.radius = radius
         self.y = y
         self.x = x
+        self.text = font1.render(str(my_name), 1, (0,0,0))
+
 
     def collide(self, x, y):
         distans = math.hypot(self.x - x, self.y - y)
@@ -33,10 +38,14 @@ class My_Player():
 
     def draw(self):
         pygame.draw.circle(screen, self.color, (0+screen_x//2, 0+screen_y//2), self.radius)
+        screen.blit(pygame.transform.scale(pygame.image.load(f'awatars/{my_img_name}.png'), (self.radius*2, self.radius*2)), (screen_x//2-self.radius, screen_y//2-self.radius))
+        screen.blit(self.text, (0+screen_x//2, 0+screen_y//2))
+
 
 font1=pygame.font.Font(None, 40)
 class Enemy_Player():
-    def __init__(self, x, y, radius, name='', color=(255,0,0)):
+    def __init__(self, x, y, radius, name='', img_name=2, color=(255,0,0)):
+        self.img_name = img_name
         self.name = name
         self.color = color
         self.radius = radius
@@ -46,6 +55,7 @@ class Enemy_Player():
 
     def draw(self, x_pad, y_pad):
         pygame.draw.circle(screen, self.color, (self.x-x_pad+screen_x//2, self.y-y_pad+screen_y//2), self.radius)
+        screen.blit(pygame.transform.scale(pygame.image.load(f'awatars/{self.img_name}.png'), (self.radius*2, self.radius*2)), (self.x-x_pad+screen_x//2-self.radius, self.y-y_pad+screen_y//2-self.radius))
         screen.blit(self.text, (self.x-x_pad+screen_x//2, self.y-y_pad+screen_y//2))
 
 
@@ -65,9 +75,9 @@ time.sleep(1)
 clock = pygame.time.Clock()
 ran = True
 while ran:
-    screen = pygame.Surface((my_Player.radius*10+300, my_Player.radius*10+300))
+    screen = pygame.Surface(((my_Player.radius*10+300), (my_Player.radius*10+300)))
     screen_x, screen_y = screen.get_size()
-    kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name]).encode())
+    kliet_socket.send(str([my_Player.x, my_Player.y, my_Player.radius, my_name, my_img_name]).encode())
 
 
     for event in pygame.event.get():
@@ -104,7 +114,7 @@ while ran:
         # print(2)
         for player in players.values():
             # print(player)
-            Enemy_Player(player[0], player[1], player[2], player[3]).draw(my_Player.x, my_Player.y)
+            Enemy_Player(player[0], player[1], player[2], player[3], player[4]).draw(my_Player.x, my_Player.y)
     except: print('e')
 
     for eat0 in eats:
